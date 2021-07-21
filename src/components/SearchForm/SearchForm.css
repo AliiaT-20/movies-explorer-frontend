@@ -1,0 +1,119 @@
+.search {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 80px;
+    padding-bottom: 94px;
+    padding-left: 4vw;
+    padding-right: 4vw;
+}
+
+.search__content {
+    width: 100%;
+    max-width: 1140px;
+}
+
+.search__form {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.search__form-wrap {
+    max-width: 922px;
+    width: 81.7%;
+    display: flex;
+    border: 1.5px solid #AAAAAA;
+    border-radius: 50px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-right: 7px;
+}
+
+.search__form-field {
+    width: 90%;
+}
+
+.search__text {
+    background-color: transparent;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    margin: 0;
+    line-height: 1.29;
+    font-size: 14px;
+    width: 100%;
+    color: white;
+    font-weight: 400;
+    border: none;
+    padding-left: 22px;
+}
+
+.search__text::placeholder {
+    color: #8B8B8B;
+    font-size: 14px;
+    line-height: 1.29;
+    font-weight: 400;
+    border: none;
+}
+
+.login__submit-button {
+    margin: 0;
+    height: 34px;
+    margin-top: 7px;
+    margin-bottom: 7px;
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    opacity: 1;
+    transition: opacity 0.4s ease-in-out;
+    cursor: pointer;
+}
+
+.login__submit-button:hover {
+    opacity: 0.8;
+}
+
+.search__icon {
+    width: 34px;
+}
+
+.search__checkbox-wrap {
+    width: 18.3%;
+}
+
+@media screen and (max-width: 768px) {
+    .search {
+        padding-bottom: 0;
+    }
+    .search__content {
+        padding-bottom: 57px;
+        border-bottom: solid 1px rgba(170, 170, 170, .2);
+    }
+    .search__form {
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+    }
+    .search__form-wrap {
+        width: 100%;
+    }
+    .search__checkbox-wrap {
+        margin-top: 38px;
+        width: 100%;
+    }
+}
+
+@media screen and (max-width: 568px) {
+    .search__content {
+        padding-bottom: 44px;
+    }
+    .search__text {
+        font-size: 11px;
+    }
+    .search__checkbox-wrap {
+        margin-top: 44px;
+    }
+}
