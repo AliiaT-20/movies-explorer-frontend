@@ -1,9 +1,10 @@
 import './MoviesCard.css';
+import filmImage from "../../images/film.jpg"
 
 function MoviesCard(props) {
   return (
     <div className="card">
-        <div className="card__image" />
+        <img src= {filmImage} className="card__image" alt="Обложка фильма" />
         <div className="card__info">
             <div className="card__text-content">
                 <h5 className="card__title">33 слова о дизайне</h5>
