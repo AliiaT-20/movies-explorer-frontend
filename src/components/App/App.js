@@ -208,7 +208,6 @@ function App() {
       } else {
         result = movies;
       }
-      console.log(result)
       localStorage.setItem('filtred-films', JSON.stringify(result));
       if (result.length === 0) {
         setHaveFilms(false);
