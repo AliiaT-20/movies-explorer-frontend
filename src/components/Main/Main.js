@@ -11,7 +11,7 @@ import Footer from '../Footer/Footer';
 function Main(props) {
   return (
       <>
-      <Header link = {props.path} unlog = "header_unlogin" />
+      <Header loggedIn = {props.loggedIn} link = {props.path} unlog = "header_unlogin" />
       <Promo />
       <NavTab />
       <AboutProject />

@@ -8,12 +8,13 @@ import React from 'react';
 function Movies(props) {
   return (
     <>
-      <Header link = {props.path} />
+      <Header link = {props.path} loggedIn = {props.loggedIn} />
       <SearchForm
         onSubmit = {props.handleSearchForm}
         isValid = {props.isValid}
         handleChange = {props.handleChange}
         errors = {props.errors}
+        handleFiltredMovies = {props.handleFiltredMovies}
       />
       <MoviesCardList
         addClick = {props.handleAddCards}

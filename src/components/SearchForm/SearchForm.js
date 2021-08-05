@@ -18,7 +18,7 @@ function SearchForm(props) {
                         </button>
                     </div>
                     <div className="search__checkbox-wrap">
-                        <FilterCheckbox onChange = {props.handleChange} />
+                        <FilterCheckbox filtred = {props.handleFiltredMovies} />
                     </div>
                 </form>
             </div>

@@ -7,7 +7,7 @@ import Footer from '../Footer/Footer';
 function SavedMovies(props) {
   return (
     <>
-      <Header link = {props.path} />
+      <Header link = {props.path} loggedIn = {props.loggedIn} />
       <SearchForm
         onSubmit = {props.handleSearchForm}
         isValid = {props.isValid}

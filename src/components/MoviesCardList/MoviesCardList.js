@@ -42,7 +42,6 @@ function MoviesCardList(props) {
             </>
         )}
         {props.page === '/saved-movies' && (
-           <>
            <section className="movies-list">
                <div className="movies-list__content">
                    {props.cards.map((card) => {
@@ -63,7 +62,6 @@ function MoviesCardList(props) {
                </div>
                {!props.havingFilms && (<h5 className="movies-list__title-notfound">Ничего не найдено :(</h5>)}
            </section>
-           </> 
         )}  
         </>
     );

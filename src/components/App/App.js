@@ -15,6 +15,7 @@ import mainApi from '../../utils/MainApi';
 import InfoTooltip from '../InfoTooltip/InfoTooltip';
 import success from '../../images/success.svg';
 import nonsuccess from '../../images/nonsuccess.svg';
+import constants from '../../utils/constants';
 
 function App() {
   const history = useHistory();
@@ -29,7 +30,6 @@ function App() {
   const [isInfoTooltipOpen, setIsInfoTooltip] = React.useState(false);
   const [textInfoTooltip, setTextInfoTooltip] = React.useState('');
   const [imageInfoTooltip, setImageInfoTooltip] = React.useState('');
-  const [currentUser, setCurrentUser] = React.useState({});
   const [values, setValues] = React.useState({});
   const [errors, setErrors] = React.useState({});
   const [isValid, setIsValid] = React.useState(false);
@@ -39,7 +39,7 @@ function App() {
 
   function handleChange(e) {
     const target = e.target;
-    const value = target.type === "checkbox" ? target.checked : target.value;
+    const value = target.value;
     const name = target.name;
     setValues({...values, [name]: value});
     setErrors({...errors, [name]: target.validationMessage})
@@ -76,6 +76,8 @@ function App() {
               setUserData(userData);
               setLoggedIn(true);
               history.push('/movies');
+              history.push('profile');
+              history.push('saved-movies');
             }
           })
           .catch(err => console.log(err)); 
@@ -107,15 +109,20 @@ function App() {
   function handleOnLogin(e) {
     e.preventDefault();
     if (isValid === true) {
+      setIsPreloader(true);
       mainApi.login(values.email, values.password)
       .then((data) => {
         if (data.token){
           handleLoggedIn();
           history.push('/movies');
+          resetForm();
         }
       })
       .catch((err) => {
         console.log(err);
+      })
+      .finally(() => {
+        setIsPreloader(false);
       })
     } else {
       setIsValid(false)
@@ -125,6 +132,7 @@ function App() {
   function handleOnRegister(e) {
     e.preventDefault();
     if (isValid === true) {
+      setIsPreloader(true);
       mainApi.register(values.email, values.password, values.name)
       .then((res) => {
         if(!res.error && !res.message){
@@ -136,6 +144,9 @@ function App() {
       .catch((err) => {
         console.log(err);
       })
+      .finally(() => {
+        setIsPreloader(false);
+      })
     } else {
       setIsValid(false)
     }
@@ -144,11 +155,15 @@ function App() {
   function handleUpdateProfile(e) {
     e.preventDefault();
     if (isValid === true) {
+      setIsPreloader(true);
       mainApi.updateProfileInfo(values.name, values.email)
         .then((data) => {
           if(!data.error && !data.message){
-            const userNewInfo = data;
-            setCurrentUser(userNewInfo);
+            const userNewInfo = {
+              email: data.email,
+              name: data.name
+            };
+            setUserData(userNewInfo)
             handleInfoToolTipOpen("Ваши данные успешно изменены!", success)
           } else {
             handleInfoToolTipOpen("Что-то пошло не так! Попробуйте ещё раз.", nonsuccess)
@@ -157,9 +172,18 @@ function App() {
         .catch((err) => {
           console.log(err);
         })
+        .finally(() => {
+          setIsPreloader(false);
+        })
     } else {
       setIsValid(false);
     }
+  }
+
+  function handleSignOut() {
+    localStorage.removeItem('jwt');
+    setLoggedIn(false);
+    history.push('/');
   }
 
   function handleSearchForm(e) {
@@ -175,7 +199,7 @@ function App() {
       countCardsOnPage();
       const movies = [];
       const film = values.film;
-      let result;
+      console.log(film)
       if (/[а-я]/i.test(film)) {
         moviesFromApi.forEach((item) => {
           if (item.nameRU !== null || "") {
@@ -201,23 +225,32 @@ function App() {
           }
         })
       }
-      if (values.checkbox) {
-        result = movies.filter((item) => {
-          return item.duration <= '40'
-        })
-      } else {
-        result = movies;
-      }
-      localStorage.setItem('filtred-films', JSON.stringify(result));
-      if (result.length === 0) {
+      localStorage.setItem('filtred-films', JSON.stringify(movies));
+      if (movies.length === 0) {
         setHaveFilms(false);
         setMoviesOnPage([]);
       } else {
-        setMoviesOnPage(result);
+        setMoviesOnPage(movies);
+        setHaveFilms(true);
       }
       setIsPreloader(false);
     } else {
       setIsValid(false)
+    }
+  }
+
+  function handleFiltredMovies(e) {
+    const value = e.target.checked;
+    let result;
+    if (value) {
+      result = moviesOnPage.filter((item) => {
+        return item.duration <= constants.durationMini
+      })
+      localStorage.setItem('filtred-duration-films', JSON.stringify(result))
+      setMoviesOnPage(result)
+    } else {
+      result = JSON.parse(localStorage.getItem('filtred-films'));
+      setMoviesOnPage(result);
     }
   }
 
@@ -233,7 +266,6 @@ function App() {
       countCardsOnPage();
       const movies = [];
       const film = values.film;
-      let result;
       if (/[а-я]/i.test(film)) {
         savedMovies.forEach((item) => {
           if (item.nameRU !== null || "") {
@@ -259,19 +291,11 @@ function App() {
           }
         })
       }
-      if (values.checkbox) {
-        result = movies.filter((item) => {
-          return item.duration <= '40'
-        })
-      } else {
-        result = movies;
-      }
-      if (result.length === 0) {
+      if (movies.length === 0) {
         setHaveFilms(false);
         setSavedMovies([]);
       } else {
-        console.log('kkg')
-        setSavedMovies(result);
+        setSavedMovies(movies);
       }
     } else {
       setIsValid(false)
@@ -281,17 +305,17 @@ function App() {
   function countCardsOnPage() {
     const windowWidth = document.documentElement.clientWidth;
     if (windowWidth > 1239) {
-      setCardsOnLine(4);
-      setCardsLength(16);
+      setCardsOnLine(constants.cardsOnLineXL);
+      setCardsLength(constants.cardsLengthXL);
     } else if (windowWidth > 923 && windowWidth <= 1239) {
-      setCardsOnLine(3);
-      setCardsLength(12)
+      setCardsOnLine(constants.cardsOnLineL);
+      setCardsLength(constants.cardsLengthL)
     } else if (windowWidth > 626 && windowWidth <=923) {
-      setCardsOnLine(2);
-      setCardsLength(8);
+      setCardsOnLine(constants.cardsOnLineM);
+      setCardsLength(constants.cardsLengthM);
     } else if (windowWidth <= 626) {
-      setCardsOnLine(1);
-      setCardsLength(5)
+      setCardsOnLine(constants.cardsOnLineS);
+      setCardsLength(constants.cardsLengthS)
     }
   }
   function addCards() {
@@ -306,6 +330,31 @@ function App() {
     if (!isLike) {
       mainApi.createMovie(film)
         .then((res) => {
+        })
+        .catch((err) => console.log(err))
+      mainApi.getMovies()
+        .then((films) => {
+          const movies = films.data;
+          localStorage.setItem('saved-films', JSON.stringify(movies));
+          const saveFilms = JSON.parse(localStorage.getItem('saved-films'));
+          if (saveFilms) {
+            setSavedMovies(saveFilms)
+          } else {
+            setSavedMovies([]);
+          }
+        })
+        .catch((err) => {
+          console.log(err)
+        })
+    } else {
+      savedMovies.forEach((item) => {
+        if (item.movieId === film.id) {
+          mainApi.removeMovie(item._id)
+            .then((res) => {
+            })
+            .catch((err) => {
+              console.log(err)
+            })
           mainApi.getMovies()
             .then((films) => {
               const movies = films.data;
@@ -318,32 +367,7 @@ function App() {
               }
             })
             .catch((err) => {
-              console.log(err)
-            })
-        })
-        .catch((err) => console.log(err))
-    } else {
-      savedMovies.forEach((item) => {
-        if (item.movieId === film.id) {
-          mainApi.removeMovie(item._id)
-            .then((res) => {
-              mainApi.getMovies()
-              .then((films) => {
-                const movies = films.data;
-                localStorage.setItem('saved-films', JSON.stringify(movies));
-                const saveFilms = JSON.parse(localStorage.getItem('saved-films'));
-                if (saveFilms) {
-                  setSavedMovies(saveFilms)
-                } else {
-                  setSavedMovies([]);
-                }
-              })
-              .catch((err) => {
-                console.log(err.message)
-              })
-            })
-            .catch((err) => {
-              console.log(err)
+              console.log(err.message)
             })
         }
       })
@@ -397,23 +421,20 @@ function App() {
   }, [])
 
   React.useEffect(() => {
-    mainApi.getUserInfo()
-      .then((res) => {
-        setCurrentUser(res)
-      })
-      .catch((err) => console.log(err))
-  }, [])
-
-  React.useEffect(() => {
-    moviesApi.getCards()
-    .then((data) => {
-      localStorage.setItem('films', JSON.stringify(data))
+    if (localStorage.getItem('films')) {
       const movies = JSON.parse(localStorage.getItem('films'))
       setMoviesFromApi(movies)
-    })
-    .catch((err) => {
-      console.log(err)
-    })
+    } else {
+      moviesApi.getCards()
+        .then((data) => {
+          localStorage.setItem('films', JSON.stringify(data))
+          const movies = JSON.parse(localStorage.getItem('films'))
+          setMoviesFromApi(movies)
+        })
+        .catch((err) => {
+          console.log(err)
+        })
+    }
   }, [])
 
   React.useEffect(() => {
@@ -435,7 +456,7 @@ function App() {
   }, [])
 
   return (
-    <CurrentUserContext.Provider value={currentUser}>
+    <CurrentUserContext.Provider value={userData}>
       <div className="page">
         <main className="cont">
           <Switch>
@@ -454,6 +475,7 @@ function App() {
               errors = {errors}
               handleSaveCard = {handleSaveCard}
               savedMovies = {savedMovies}
+              handleFiltredMovies = {handleFiltredMovies}
             />
             <ProtectedRoute
               path="/saved-movies"
@@ -477,13 +499,16 @@ function App() {
               isValid = {isValid}
               handleChange = {handleChange}
               errors = {errors}
+              values = {values}
               isInfoTooltipOpen = {isInfoTooltipOpen}
               imageInfoTooltip = {imageInfoTooltip}
               textInfoTooltip = {textInfoTooltip}
               handleInfoTooltipClose = {handleInfoTooltipClose}
+              onPreloader = {isPreloader}
+              signOut =  {handleSignOut}
             />
             <Route exact path="/">
-              <Main path="/" />
+              <Main path="/" loggedIn={loggedIn} />
             </Route>
             <Route path="/signin">
               <Login
@@ -492,7 +517,8 @@ function App() {
                 handleChange = {handleChange}
                 errors = {errors}
                 apiErrorVisible = {apiError}
-                apiErrorText = {apiErrorText} 
+                apiErrorText = {apiErrorText}
+                onPreloader = {isPreloader}
               />
             </Route>
             <Route path="/signup">
@@ -502,7 +528,8 @@ function App() {
                 handleChange = {handleChange}
                 errors = {errors}
                 apiErrorVisible = {apiError}
-                apiErrorText = {apiErrorText} 
+                apiErrorText = {apiErrorText}
+                onPreloader = {isPreloader} 
               />
             </Route>
             <Route path="*">
