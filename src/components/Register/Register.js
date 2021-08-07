@@ -1,4 +1,5 @@
 import './Register.css';
+import { Link } from 'react-router-dom';
 import logo from "../../images/logo.svg"
 import Form from '../Form/Form';
 import React from 'react';
@@ -8,7 +9,9 @@ function Register(props) {
     return (
         <section className="register">
             <div className="register__content">
-                <img src= {logo} alt="Логотип" className="register__logo" />
+                <Link to="/">
+                    <img src= {logo} alt="Логотип" className="register__logo" />
+                </Link>
                 <h3 className="register__title">Добро пожаловать!</h3>
                 {props.onPreloader ? (<Preloader />) : (
                     <Form name="register" buttonText="Зарегистрироваться" onSubmit = {props.onRegister} isValid = {props.isValid} apiErrorVisible = {props.apiErrorVisible} apiErrorText = {props.apiErrorText}>
@@ -29,7 +32,7 @@ function Register(props) {
                         </label>
                     </Form>
                 )}
-                <p className="register__postForm-text">Уже зарегистрированы? <a className="register__link" href="/signin">Войти</a></p>
+                <p className="register__postForm-text">Уже зарегистрированы? <Link className="register__link" to="/signin">Войти</Link></p>
             </div>
         </section>
     );

@@ -27,7 +27,7 @@ function Login(props) {
                         </label>
                     </Form>
                 )}
-                <p className="login__postForm-text">Ещё не зарегистрированы? <a className="login__link" href="/signup">Регистрация</a></p>
+                <p className="login__postForm-text">Ещё не зарегистрированы? <Link className="login__link" to="/signup">Регистрация</Link></p>
             </div>
         </section>
     );

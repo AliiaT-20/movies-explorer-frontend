@@ -1,6 +1,6 @@
 import './App.css';
 import React from 'react';
-import { Route, Switch, useHistory } from 'react-router-dom';
+import { Redirect, Route, Switch, useHistory } from 'react-router-dom';
 import ProtectedRoute from '../ProtectedRoute/ProtectedRoute';
 import Main from '../Main/Main';
 import Movies from '../Movies/Movies';
@@ -8,7 +8,8 @@ import SavedMovies from '../SavedMovies/SavedMovies';
 import Profile from '../Profile/Profile';
 import Register from '../Register/Register';
 import Login from '../Login/Login';
-import {CurrentUserContext} from '../../contexts/CurrentUserContext';
+import { AppContext } from '../../contexts/AppContext';
+import { CurrentUserContext } from '../../contexts/CurrentUserContext';
 import NotFound from '../NotFound/NotFound';
 import moviesApi from '../../utils/MoviesApi';
 import mainApi from '../../utils/MainApi';
@@ -22,7 +23,7 @@ function App() {
   const [moviesOnPage, setMoviesOnPage] = React.useState([]);
   const [isPreloader, setIsPreloader] = React.useState(false);
   const [haveFilms, setHaveFilms] = React.useState(true);
-  const [loggedIn, setLoggedIn] = React.useState(false);
+  const [loggedIn, setLoggedIn] = React.useState(true);
   const [moviesFromApi, setMoviesFromApi] = React.useState([]);
   const [apiError, setApiError] = React.useState(false);
   const [apiErrorText, setApiErrorText] = React.useState('');
@@ -55,36 +56,6 @@ function App() {
     [setValues, setErrors, setIsValid]
   )
 
-  function handleLoggedIn() {
-    setLoggedIn(true);
-  }
-
-  function tokenCheck () {
-    // если у пользователя есть токен в localStorage, 
-    // эта функция проверит, действующий он или нет
-    if (localStorage.getItem('jwt')){
-      const jwt = localStorage.getItem('jwt');
-      if (jwt){
-        // проверим токен
-        mainApi.getUserInfo()
-          .then((res) => {
-            if (res) {
-              const userData = {
-                email: res.data.email,
-                name: res.data.name
-              };
-              setUserData(userData);
-              setLoggedIn(true);
-              history.push('/movies');
-              history.push('profile');
-              history.push('saved-movies');
-            }
-          })
-          .catch(err => console.log(err)); 
-      }  
-    }
-  }
-
   function handleInfoToolTipOpen(text, image) {
     setIsInfoTooltip(true);
     setTextInfoTooltip(text);
@@ -101,31 +72,46 @@ function App() {
     };
   }
 
-  function handleApiError(error) {
-    setApiError(true);
-    setApiErrorText(error)
-  }
-
   function handleOnLogin(e) {
     e.preventDefault();
     if (isValid === true) {
       setIsPreloader(true);
       mainApi.login(values.email, values.password)
-      .then((data) => {
-        if (data.token){
-          handleLoggedIn();
+        .then((data) => {
+          if (data.token){
+            setLoggedIn(true);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        })
+        .finally(() => {
+          if (!localStorage.getItem('jwt')) {
+            setLoggedIn(false);
+          } else {
+            const jwt = localStorage.getItem('jwt');
+            if (jwt) {
+              let userDataApi;
+              mainApi.getUserInfo(jwt)
+                .then((res) => {
+                  if (res) {
+                    userDataApi = {
+                      email: res.data.email,
+                      name: res.data.name
+                    };
+                  setUserData(userDataApi);
+                  }
+                })
+                .catch(err => console.log(err));
+            }  
+          }
           history.push('/movies');
           resetForm();
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-      })
-      .finally(() => {
-        setIsPreloader(false);
-      })
+          setIsPreloader(false);   
+        })
     } else {
       setIsValid(false)
+      setLoggedIn(false)
     }
   }
 
@@ -142,6 +128,7 @@ function App() {
         }
       })
       .catch((err) => {
+        handleInfoToolTipOpen(err, nonsuccess)
         console.log(err);
       })
       .finally(() => {
@@ -170,6 +157,7 @@ function App() {
           }
         })
         .catch((err) => {
+          handleInfoToolTipOpen(err, nonsuccess)
           console.log(err);
         })
         .finally(() => {
@@ -199,7 +187,6 @@ function App() {
       countCardsOnPage();
       const movies = [];
       const film = values.film;
-      console.log(film)
       if (/[а-я]/i.test(film)) {
         moviesFromApi.forEach((item) => {
           if (item.nameRU !== null || "") {
@@ -323,6 +310,24 @@ function App() {
     setCardsLength(filmsForView);
   }
 
+  function getMovies() {
+    mainApi.getMovies()
+      .then((films) => {
+        const movies = films.data;
+        localStorage.setItem('saved-films', JSON.stringify(movies));
+        const saveFilms = JSON.parse(localStorage.getItem('saved-films'));
+        if (saveFilms) {
+          setSavedMovies(saveFilms)
+        } else {
+          setSavedMovies([]);
+        }
+      })
+      .catch((err) => {
+        handleInfoToolTipOpen(err, nonsuccess)
+        console.log(err)
+      })
+  }
+
   function handleSaveCard(film) {
     const isLike = savedMovies.some((item) => {
       return item.movieId === film.id
@@ -330,44 +335,22 @@ function App() {
     if (!isLike) {
       mainApi.createMovie(film)
         .then((res) => {
-        })
-        .catch((err) => console.log(err))
-      mainApi.getMovies()
-        .then((films) => {
-          const movies = films.data;
-          localStorage.setItem('saved-films', JSON.stringify(movies));
-          const saveFilms = JSON.parse(localStorage.getItem('saved-films'));
-          if (saveFilms) {
-            setSavedMovies(saveFilms)
-          } else {
-            setSavedMovies([]);
-          }
+          getMovies()
         })
         .catch((err) => {
+          handleInfoToolTipOpen(err, nonsuccess)
           console.log(err)
-        })
+        });
     } else {
-      savedMovies.forEach((item) => {
+      savedMovies.some((item) => {
         if (item.movieId === film.id) {
           mainApi.removeMovie(item._id)
             .then((res) => {
+              getMovies();
             })
             .catch((err) => {
-              console.log(err)
-            })
-          mainApi.getMovies()
-            .then((films) => {
-              const movies = films.data;
-              localStorage.setItem('saved-films', JSON.stringify(movies));
-              const saveFilms = JSON.parse(localStorage.getItem('saved-films'));
-              if (saveFilms) {
-                setSavedMovies(saveFilms)
-              } else {
-                setSavedMovies([]);
-              }
-            })
-            .catch((err) => {
-              console.log(err.message)
+              handleInfoToolTipOpen(err, nonsuccess);
+              console.log(err);
             })
         }
       })
@@ -379,31 +362,23 @@ function App() {
       return item.movieId === film.movieId
     });
     if (isLike) {
-      savedMovies.forEach((item) => {
+      savedMovies.some((item) => {
         if (item.movieId === film.movieId) {
           mainApi.removeMovie(item._id)
             .then((res) => {
-              mainApi.getMovies()
-              .then((films) => {
-                const movies = films.data;
-                localStorage.setItem('saved-films', JSON.stringify(movies));
-                const saveFilms = JSON.parse(localStorage.getItem('saved-films'));
-                if (saveFilms) {
-                  setSavedMovies(saveFilms)
-                } else {
-                  setSavedMovies([]);
-                }
-              })
-              .catch((err) => {
-                console.log(err.message)
-              })
+              getMovies();
             })
             .catch((err) => {
-              console.log(err)
+              handleInfoToolTipOpen(err, nonsuccess);
+              console.log(err);
             })
         }
       })
     }
+  }
+
+  function goBack() {
+    history.goBack();
   }
 
   React.useEffect(() => {
@@ -417,8 +392,56 @@ function App() {
   }, []);
 
   React.useEffect(() => {
-    tokenCheck();
+    if (!localStorage.getItem('jwt')) {
+      setLoggedIn(false);
+    } else {
+      const jwt = localStorage.getItem('jwt');
+      if (jwt) {
+        let userDataApi;
+        mainApi.getUserInfo(jwt)
+          .then((res) => {
+            if (res) {
+              userDataApi = {
+                email: res.data.email,
+                name: res.data.name
+              };
+            setUserData(userDataApi);
+            console.log(userData)
+            console.log(loggedIn)
+            }
+          })
+          .catch((err) => {
+            handleInfoToolTipOpen(err, nonsuccess)
+            console.log(err)
+          });
+      }  
+    }
   }, [])
+
+  React.useEffect(() => {
+    if (!localStorage.getItem('jwt')) {
+      setLoggedIn(false);
+    } else {
+      const jwt = localStorage.getItem('jwt');
+      if (jwt) {
+        let userDataApi;
+        mainApi.getUserInfo(jwt)
+          .then((res) => {
+            if (res) {
+              userDataApi = {
+                email: res.data.email,
+                name: res.data.name
+              };
+            setUserData(userDataApi);
+            }
+          })
+          .catch((err) => {
+            handleInfoToolTipOpen(err, nonsuccess);
+            console.log(err);
+          });
+      }  
+    }
+  }, [loggedIn])
 
   React.useEffect(() => {
     if (localStorage.getItem('films')) {
@@ -432,7 +455,8 @@ function App() {
           setMoviesFromApi(movies)
         })
         .catch((err) => {
-          console.log(err)
+          handleInfoToolTipOpen(err, nonsuccess);
+          console.log(err);
         })
     }
   }, [])
@@ -447,103 +471,108 @@ function App() {
   }, [])
 
   React.useState(() => {
-    const saveFilms = JSON.parse(localStorage.getItem('saved-films'));
-    if (saveFilms) {
-      setSavedMovies(saveFilms)
+    const savedFilms = JSON.parse(localStorage.getItem('saved-films'));
+    if (savedFilms) {
+      setSavedMovies(savedFilms);
     } else {
-      setSavedMovies([]);
+      setSavedMovies([])
     }
   }, [])
 
   return (
-    <CurrentUserContext.Provider value={userData}>
-      <div className="page">
-        <main className="cont">
-          <Switch>
-            <ProtectedRoute
-              path="/movies"
-              loggedIn={loggedIn}
-              component={Movies}
-              moviesOnPage = {moviesOnPage}
-              isPreloader = {isPreloader}
-              haveFilms = {haveFilms}
-              cardsLength = {cardsLength}
-              handleAddCards = {addCards}
-              handleSearchForm = {handleSearchForm}
-              isValid = {isValid}
-              handleChange = {handleChange}
-              errors = {errors}
-              handleSaveCard = {handleSaveCard}
-              savedMovies = {savedMovies}
-              handleFiltredMovies = {handleFiltredMovies}
-            />
-            <ProtectedRoute
-              path="/saved-movies"
-              loggedIn={loggedIn}
-              component={SavedMovies}
-              moviesOnPage = {savedMovies}
-              handleSearchForm = {handleSearchFormSaving}
-              handleChange = {handleChange}
-              errors = {errors}
-              ardsLength = {cardsLength}
-              handleSaveCard = {handleRemoveCard}
-              haveFilms = {haveFilms}
-            />
-            <ProtectedRoute
-              path="/profile"
-              loggedIn={loggedIn}
-              component={Profile}
-              name={userData.name}
-              email={userData.email}
-              handleUpdateProfile = {handleUpdateProfile}
-              isValid = {isValid}
-              handleChange = {handleChange}
-              errors = {errors}
-              values = {values}
-              isInfoTooltipOpen = {isInfoTooltipOpen}
-              imageInfoTooltip = {imageInfoTooltip}
-              textInfoTooltip = {textInfoTooltip}
-              handleInfoTooltipClose = {handleInfoTooltipClose}
-              onPreloader = {isPreloader}
-              signOut =  {handleSignOut}
-            />
-            <Route exact path="/">
-              <Main path="/" loggedIn={loggedIn} />
-            </Route>
-            <Route path="/signin">
-              <Login
-                onLogin = {handleOnLogin}
+    <AppContext.Provider value={loggedIn}>
+      <CurrentUserContext.Provider value={userData}>
+        <div className="page">
+          <main className="cont">
+            <Switch>
+              <ProtectedRoute
+                path="/movies"
+                loggedIn={loggedIn}
+                component={Movies}
+                moviesOnPage = {moviesOnPage}
+                isPreloader = {isPreloader}
+                haveFilms = {haveFilms}
+                cardsLength = {cardsLength}
+                handleAddCards = {addCards}
+                handleSearchForm = {handleSearchForm}
                 isValid = {isValid}
                 handleChange = {handleChange}
                 errors = {errors}
-                apiErrorVisible = {apiError}
-                apiErrorText = {apiErrorText}
+                handleSaveCard = {handleSaveCard}
+                savedMovies = {savedMovies}
+                handleFiltredMovies = {handleFiltredMovies}
+              />
+              <ProtectedRoute
+                path="/saved-movies"
+                loggedIn={loggedIn}
+                component={SavedMovies}
+                moviesOnPage = {savedMovies}
+                handleSearchForm = {handleSearchFormSaving}
+                handleChange = {handleChange}
+                errors = {errors}
+                ardsLength = {cardsLength}
+                handleSaveCard = {handleRemoveCard}
+                haveFilms = {haveFilms}
+              />
+              <ProtectedRoute
+                path="/profile"
+                loggedIn={loggedIn}
+                component={Profile}
+                name={userData.name}
+                email={userData.email}
+                handleUpdateProfile = {handleUpdateProfile}
+                isValid = {isValid}
+                handleChange = {handleChange}
+                errors = {errors}
+                values = {values}
+                isInfoTooltipOpen = {isInfoTooltipOpen}
+                imageInfoTooltip = {imageInfoTooltip}
+                textInfoTooltip = {textInfoTooltip}
+                handleInfoTooltipClose = {handleInfoTooltipClose}
                 onPreloader = {isPreloader}
+                signOut =  {handleSignOut}
               />
-            </Route>
-            <Route path="/signup">
-              <Register
-                onRegister = {handleOnRegister}
-                isValid = {isValid}
-                handleChange = {handleChange}
-                errors = {errors}
-                apiErrorVisible = {apiError}
-                apiErrorText = {apiErrorText}
-                onPreloader = {isPreloader} 
-              />
-            </Route>
-            <Route path="*">
-              <NotFound />
-            </Route>
-          </Switch>
-          <InfoTooltip
-            isOpen = {isInfoTooltipOpen}
-            image = {imageInfoTooltip}
-            text = {textInfoTooltip}
-            onClose = {handleInfoTooltipClose} />
-        </main>
-      </div>
-    </CurrentUserContext.Provider>
+              <Route exact path="/">
+                <Main path="/" loggedIn={loggedIn} />
+              </Route>
+              <Route path="/signin">
+                {loggedIn ? <Redirect to="/" /> : <Login
+                  onLogin = {handleOnLogin}
+                  isValid = {isValid}
+                  handleChange = {handleChange}
+                  errors = {errors}
+                  apiErrorVisible = {apiError}
+                  apiErrorText = {apiErrorText}
+                  onPreloader = {isPreloader}
+                />}
+              </Route>
+              <Route path="/signup">
+                <Register
+                  onRegister = {handleOnRegister}
+                  isValid = {isValid}
+                  handleChange = {handleChange}
+                  errors = {errors}
+                  apiErrorVisible = {apiError}
+                  apiErrorText = {apiErrorText}
+                  onPreloader = {isPreloader} 
+                />
+              </Route>
+              <Route path="/not-found">
+                <NotFound goBack = {goBack} />
+              </Route>
+              <Route path="*">
+                <Redirect to ="/not-found" />
+              </Route>
+            </Switch>
+            <InfoTooltip
+              isOpen = {isInfoTooltipOpen}
+              image = {imageInfoTooltip}
+              text = {textInfoTooltip}
+              onClose = {handleInfoTooltipClose} />
+          </main>
+        </div>
+      </CurrentUserContext.Provider>
+    </AppContext.Provider>
   );
 }
 

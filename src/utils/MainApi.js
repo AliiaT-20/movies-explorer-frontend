@@ -82,10 +82,13 @@ class MainApi {
             }
         })
     }
-    getUserInfo() {
+    getUserInfo(jwt) {
         return fetch(this.url + '/users/me', {
             method: 'GET',
-            headers: this.headers,
+            headers: {
+                'authorization': `Bearer ${jwt}`,
+                'Content-Type': 'application/json'
+            },
         })
         .then((res) => {
             return this._check(res)
