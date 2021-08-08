@@ -9,9 +9,12 @@ class MainApi {
       }
          return Promise.reject(`Ошибка: ${res.status}`)
     }
-    getMovies() {
+    getMovies(jwt) {
         return fetch(this.url + '/movies', {
-            headers: this.headers})
+            headers: {
+                'authorization': `Bearer ${jwt}`,
+                'Content-Type': 'application/json'
+            }})
             .then((res) => {
                 return this._check(res)
             })
@@ -21,10 +24,13 @@ class MainApi {
                 }
             })
     }
-    createMovie(movie) {
+    createMovie(movie, jwt) {
         return fetch(this.url + '/movies', {
             method: 'POST',
-            headers: this.headers,
+            headers: {
+                'authorization': `Bearer ${jwt}`,
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
                 country: movie.country,
                 director: movie.director,
@@ -43,10 +49,13 @@ class MainApi {
              return this._check(res);
         })
     }
-    removeMovie(id) {
+    removeMovie(id, jwt) {
         return fetch(`${this.url + '/movies'}/${id}`, {
             method: 'DELETE',
-            headers: this.headers,
+            headers: {
+                'authorization': `Bearer ${jwt}`,
+                'Content-Type': 'application/json'
+            },
         })
         .then((res) => {
             return this._check(res)

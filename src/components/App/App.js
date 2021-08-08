@@ -83,6 +83,8 @@ function App() {
           }
         })
         .catch((err) => {
+          setIsPreloader(false);
+          handleInfoToolTipOpen(err, nonsuccess)
           console.log(err);
         })
         .finally(() => {
@@ -100,14 +102,14 @@ function App() {
                       name: res.data.name
                     };
                   setUserData(userDataApi);
+                  history.push('/movies');
+                  resetForm();
+                  setIsPreloader(false);   
                   }
                 })
                 .catch(err => console.log(err));
             }  
           }
-          history.push('/movies');
-          resetForm();
-          setIsPreloader(false);   
         })
     } else {
       setIsValid(false)
@@ -310,8 +312,8 @@ function App() {
     setCardsLength(filmsForView);
   }
 
-  function getMovies() {
-    mainApi.getMovies()
+  function getMovies(jwt) {
+    mainApi.getMovies(jwt)
       .then((films) => {
         const movies = films.data;
         localStorage.setItem('saved-films', JSON.stringify(movies));
@@ -333,20 +335,23 @@ function App() {
       return item.movieId === film.id
     });
     if (!isLike) {
-      mainApi.createMovie(film)
+      const jwt = localStorage.getItem('jwt');
+      console.log(jwt)
+      mainApi.createMovie(film, jwt)
         .then((res) => {
-          getMovies()
+          getMovies(jwt)
         })
         .catch((err) => {
           handleInfoToolTipOpen(err, nonsuccess)
           console.log(err)
         });
     } else {
+      const jwt = localStorage.getItem('jwt');
       savedMovies.some((item) => {
         if (item.movieId === film.id) {
-          mainApi.removeMovie(item._id)
+          mainApi.removeMovie(item._id, jwt)
             .then((res) => {
-              getMovies();
+              getMovies(jwt);
             })
             .catch((err) => {
               handleInfoToolTipOpen(err, nonsuccess);
@@ -362,11 +367,12 @@ function App() {
       return item.movieId === film.movieId
     });
     if (isLike) {
+      const jwt = localStorage.getItem('jwt');
       savedMovies.some((item) => {
         if (item.movieId === film.movieId) {
-          mainApi.removeMovie(item._id)
+          mainApi.removeMovie(item._id, jwt)
             .then((res) => {
-              getMovies();
+              getMovies(jwt);
             })
             .catch((err) => {
               handleInfoToolTipOpen(err, nonsuccess);
@@ -391,32 +397,6 @@ function App() {
     };
   }, []);
 
-  React.useEffect(() => {
-    if (!localStorage.getItem('jwt')) {
-      setLoggedIn(false);
-    } else {
-      const jwt = localStorage.getItem('jwt');
-      if (jwt) {
-        let userDataApi;
-        mainApi.getUserInfo(jwt)
-          .then((res) => {
-            if (res) {
-              userDataApi = {
-                email: res.data.email,
-                name: res.data.name
-              };
-            setUserData(userDataApi);
-            console.log(userData)
-            console.log(loggedIn)
-            }
-          })
-          .catch((err) => {
-            handleInfoToolTipOpen(err, nonsuccess)
-            console.log(err)
-          });
-      }  
-    }
-  }, [])
 
   React.useEffect(() => {
     if (!localStorage.getItem('jwt')) {
