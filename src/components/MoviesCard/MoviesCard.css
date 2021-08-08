@@ -1,13 +1,19 @@
 .card {
     border-radius: 10px;
     overflow: hidden;
-    width: 100%;
+    max-width: 270px;
+    min-height: 218px;
     background-color: #222;
-    margin-right: 20px;
 }
 
-.card:nth-child(4n) {
-    margin-right: 0;
+.card__link {
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.4s ease-in-out;
+}
+
+.card__link:hover {
+    opacity: 0.8;
 }
 
 .card__image {

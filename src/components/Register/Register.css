@@ -58,11 +58,11 @@
 }
 
 .register__form-text-error {
-    font-size: 12px;
+    font-size: 10px;
     color:#EE3465;
     opacity: 0;
     position: absolute;
-    bottom: -18px;
+    top: 50px;
     left: 0;
     transition: 0.3s;
 }

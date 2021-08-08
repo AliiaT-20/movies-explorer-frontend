@@ -1,4 +1,5 @@
 import './NotFound.css';
+import { Link } from 'react-router-dom';
 
 function NotFound(props) {
     return (
@@ -6,7 +7,7 @@ function NotFound(props) {
             <div className="not-found__content">
                 <p className="not-found__title">404</p>
                 <p className="not-found__text">Страница не найдена</p>
-                <button type="button" className="not-found__button">Назад</button>
+                <Link className="not-found__button" onClick = {props.goBack}>Назад</Link>
             </div>
         </section>
     );

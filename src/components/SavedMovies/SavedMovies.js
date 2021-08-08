@@ -7,9 +7,19 @@ import Footer from '../Footer/Footer';
 function SavedMovies(props) {
   return (
     <>
-      <Header link = {props.path} />
-      <SearchForm />
-      <MoviesCardList />
+      <Header link = {props.path} loggedIn = {props.loggedIn} />
+      <SearchForm
+        onSubmit = {props.handleSearchForm}
+        isValid = {props.isValid}
+        handleChange = {props.handleChange}
+        errors = {props.errors}
+      />
+      <MoviesCardList
+        page = {props.path}
+        cards = {props.moviesOnPage}
+        saveCard = {props.handleSaveCard}
+        havingFilms = {props.haveFilms}
+      />
       <Footer />
     </>
   );
